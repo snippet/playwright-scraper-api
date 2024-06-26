@@ -3,6 +3,7 @@ import bodyParser from 'body-parser';
 import { chromium, Browser, BrowserContext, Route, Request as PlaywrightRequest } from 'playwright';
 import dotenv from 'dotenv';
 import randomUseragent from 'random-useragent';
+import { getError } from './helpers/get_error';
 
 dotenv.config();
 
@@ -196,9 +197,13 @@ app.post('/scrape', async (req: Request, res: Response) => {
     }
   }
 
-  const pageError = pageStatusCode !== 200 ? getError(pageStatusCode) : null;
+  const pageError = pageStatusCode !== 200 ? getError(pageStatusCode) : false;
 
-  console.log(`🔥 Scrape completed with status code: ${pageStatusCode}`);
+  if (!pageError) {
+    console.log(`✅ Scrape successful!`);
+  } else {
+    console.log(`🚨 Scrape failed with status code: ${pageStatusCode} ${pageError}`);
+  }
 
   await page.close();
 
@@ -221,17 +226,3 @@ process.on('SIGINT', () => {
     process.exit(0);
   });
 });
-
-function getError(statusCode: number | null): string {
-  if (statusCode === null) {
-    return 'No response received';
-  }
-  switch (statusCode) {
-    case 404:
-      return 'Page not found';
-    case 500:
-      return 'Internal server error';
-    default:
-      return `ERROR ${statusCode}`;
-  }
-}
