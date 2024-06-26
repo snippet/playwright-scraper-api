@@ -120,6 +120,7 @@ const isValidUrl = (urlString: string): boolean => {
 };
 
 const scrapePage = async (page: any, url: string, waitUntil: 'load' | 'networkidle', waitAfterLoad: number, timeout: number, checkSelector: string | undefined) => {
+  console.log(`Navigating to ${url} with waitUntil: ${waitUntil} and timeout: ${timeout}ms`);
   const response = await page.goto(url, { waitUntil, timeout });
 
   if (waitAfterLoad > 0) {
@@ -142,6 +143,14 @@ const scrapePage = async (page: any, url: string, waitUntil: 'load' | 'networkid
 
 app.post('/scrape', async (req: Request, res: Response) => {
   const { url, wait_after_load = 0, timeout = 15000, headers, check_selector }: UrlModel = req.body;
+
+  console.log(`================= Scrape Request =================`);
+  console.log(`URL: ${url}`);
+  console.log(`Wait After Load: ${wait_after_load}`);
+  console.log(`Timeout: ${timeout}`);
+  console.log(`Headers: ${headers ? JSON.stringify(headers) : 'None'}`);
+  console.log(`Check Selector: ${check_selector ? check_selector : 'None'}`);
+  console.log(`==================================================`);
 
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
@@ -170,10 +179,12 @@ app.post('/scrape', async (req: Request, res: Response) => {
   let pageStatusCode: number | null = null;
   try {
     // Strategy 1: Normal
+    console.log('Attempting strategy 1: Normal load');
     const result = await scrapePage(page, url, 'load', wait_after_load, timeout, check_selector);
     pageContent = result.content;
     pageStatusCode = result.status;
   } catch (error) {
+    console.log('Strategy 1 failed, attempting strategy 2: Wait until networkidle');
     try {
       // Strategy 2: Wait until networkidle
       const result = await scrapePage(page, url, 'networkidle', wait_after_load, timeout, check_selector);
@@ -186,6 +197,8 @@ app.post('/scrape', async (req: Request, res: Response) => {
   }
 
   const pageError = pageStatusCode !== 200 ? getError(pageStatusCode) : null;
+
+  console.log(`🔥 Scrape completed with status code: ${pageStatusCode}`);
 
   await page.close();
 
