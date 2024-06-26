@@ -185,7 +185,7 @@ app.post('/scrape', async (req: Request, res: Response) => {
     }
   }
 
-  const pageError = getError(pageStatusCode);
+  const pageError = pageStatusCode !== 200 ? getError(pageStatusCode) : null;
 
   await page.close();
 
@@ -219,6 +219,6 @@ function getError(statusCode: number | null): string {
     case 500:
       return 'Internal server error';
     default:
-      return 'Unknown error';
+      return `ERROR ${statusCode}`;
   }
 }
